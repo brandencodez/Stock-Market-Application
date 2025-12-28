@@ -47,16 +47,36 @@ const Recommendations = () => {
   }, []);
 
   const getRiskColor = (risk: string) => {
-    switch (risk.toLowerCase()) {
-      case 'low':
-        return 'text-green-400 bg-green-400/10 border-green-400/20';
-      case 'medium':
-        return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
-      case 'high':
-        return 'text-red-400 bg-red-400/10 border-red-400/20';
-      default:
-        return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
+    const riskLower = risk.toLowerCase();
+    
+    // Handle both formats: "Conservative"/"Low", "Moderate"/"Medium", "Aggressive"/"High"
+    if (riskLower.includes('conservative') || riskLower.includes('low')) {
+      return 'text-green-400 bg-green-400/10 border-green-400/20';
     }
+    if (riskLower.includes('moderate') || riskLower.includes('medium')) {
+      return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
+    }
+    if (riskLower.includes('aggressive') || riskLower.includes('high')) {
+      return 'text-red-400 bg-red-400/10 border-red-400/20';
+    }
+    
+    return 'text-gray-400 bg-gray-400/10 border-gray-400/20';
+  };
+
+  const formatRiskLabel = (risk: string) => {
+    const riskLower = risk.toLowerCase();
+    
+    if (riskLower.includes('conservative') || riskLower.includes('low')) {
+      return 'Conservative';
+    }
+    if (riskLower.includes('moderate') || riskLower.includes('medium')) {
+      return 'Moderate';
+    }
+    if (riskLower.includes('aggressive') || riskLower.includes('high')) {
+      return 'Aggressive';
+    }
+    
+    return risk;
   };
 
   return (
@@ -74,11 +94,9 @@ const Recommendations = () => {
             </p>
           </div>
         </div>
-
-        
       </div>
 
-      {/* ✅ Watchlist Context Banner */}
+      {/* Watchlist Context Banner */}
       {data?.watchlistCount !== undefined && data.watchlistCount > 0 && (
         <div className="p-4 border border-blue-500/20 rounded-lg bg-blue-500/5 flex items-center gap-3">
           <List className="w-5 h-5 text-blue-400" />
@@ -138,7 +156,7 @@ const Recommendations = () => {
                           rec.risk
                         )}`}
                       >
-                        {rec.risk} Risk
+                        {formatRiskLabel(rec.risk)} Risk
                       </span>
                     </div>
                     <p className="text-sm text-gray-400 leading-relaxed">

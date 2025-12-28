@@ -13,9 +13,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { riskTolerance, preferredIndustry } = user as any;
+    const { riskTolerance, preferredIndustry, investmentGoals } = user as any;
     
-    if (!riskTolerance || !preferredIndustry) {
+    if (!riskTolerance || !preferredIndustry || !investmentGoals) {
       return NextResponse.json({ 
         recommendations: []
       }, { status: 200 });
@@ -36,39 +36,93 @@ export async function GET(req: NextRequest) {
     const currentDate = new Date().toISOString().split('T')[0];
 
     const stockUniverses: Record<string, string[]> = {
-      Technology: [
+      technology: [
         'AAPL', 'MSFT', 'GOOGL', 'META', 'NVDA', 'AMD', 'INTC', 'ORCL', 
         'CRM', 'ADBE', 'SNOW', 'PLTR', 'NET', 'CRWD', 'ZS', 'DDOG',
         'SHOP', 'SQ', 'PYPL', 'COIN', 'RBLX', 'U', 'TEAM', 'OKTA',
         'NOW', 'WDAY', 'ZM', 'DOCU', 'TWLO', 'MDB', 'ESTC'
       ],
-      Healthcare: [
+      healthcare: [
         'JNJ', 'UNH', 'PFE', 'ABBV', 'TMO', 'ABT', 'DHR', 'LLY',
         'MRK', 'BMY', 'AMGN', 'GILD', 'CVS', 'CI', 'HUM', 'ISRG',
         'VRTX', 'REGN', 'BIIB', 'ZTS', 'ILMN', 'DXCM', 'ALGN',
         'TDOC', 'VEEV', 'IQV', 'EW', 'HOLX'
       ],
-      Finance: [
+      finance: [
         'JPM', 'BAC', 'WFC', 'C', 'GS', 'MS', 'V', 'MA', 'AXP',
         'SCHW', 'BLK', 'SPGI', 'CME', 'ICE', 'CB', 'PGR', 'TRV',
         'AIG', 'MET', 'PRU', 'AFL', 'ALL', 'TROW', 'BK', 'STT',
         'USB', 'PNC', 'TFC', 'COF', 'DFS'
       ],
-      Energy: [
-        'XOM', 'CVX', 'COP', 'SLB', 'EOG', 'PXD', 'MPC', 'PSX',
-        'VLO', 'OXY', 'HAL', 'BKR', 'DVN', 'FANG', 'HES', 'MRO',
-        'APA', 'CTRA', 'OVV', 'NEE', 'DUK', 'SO', 'D', 'AEP',
-        'XEL', 'SRE', 'ES', 'AWK', 'ED'
+      energy: [
+        'XOM', 'CVX', 'COP', 'EOG', 'PXD', 
+        'SLB', 'HAL', 'BKR',
+        'MPC', 'PSX', 'VLO',
+        'OXY', 'DVN', 'FANG', 'HES', 'MRO', 'APA', 'CTRA', 'OVV',
+        'NEE', 'DUK', 'SO', 'D', 'AEP', 'XEL', 'SRE', 'ES', 'AWK', 'ED'
       ],
-      'Consumer Goods': [
-        'PG', 'KO', 'PEP', 'WMT', 'COST', 'HD', 'LOW', 'TGT',
-        'NKE', 'SBUX', 'MCD', 'DIS', 'NFLX', 'CMCSA', 'VZ', 'T',
-        'PM', 'MO', 'CL', 'KMB', 'GIS', 'K', 'CAG', 'HSY', 'MDLZ',
-        'EL', 'CLX', 'CHD', 'SJM', 'CPB'
+      consumer: [
+        'PG', 'KO', 'PEP', 'CL', 'KMB', 'GIS', 'K', 'CAG', 'HSY', 'MDLZ',
+        'WMT', 'COST', 'HD', 'LOW', 'TGT',
+        'NKE', 'SBUX', 'MCD', 'DIS', 'NFLX',
+        'CMCSA', 'VZ', 'T',
+        'PM', 'MO', 'EL', 'CLX', 'CHD', 'SJM', 'CPB'
+      ],
+      'real-estate': [
+        'PLD', 'DLR', 'EQIX',
+        'AMT', 'CCI', 'SBAC',
+        'PSA', 'EXR', 'CUBE',
+        'WELL', 'AVB', 'EQR', 'MAA', 'ESS', 'UDR', 'CPT', 'INVH',
+        'O', 'SPG', 'KIM', 'REG',
+        'VICI', 'VTR', 'ARE', 'BXP', 'HST', 'SLG', 'VNO', 'AIV',
+        'WY', 'PCH'
+      ],
+      mixed: [
+        // Best of each sector
+        'AAPL', 'MSFT', 'NVDA', 'GOOGL', // Tech
+        'JNJ', 'UNH', 'LLY', 'ABBV', // Healthcare
+        'JPM', 'V', 'MA', 'BAC', // Finance
+        'XOM', 'CVX', 'NEE', 'COP', // Energy
+        'PG', 'WMT', 'COST', 'KO', 'HD', // Consumer
+        'PLD', 'AMT', 'EQIX', 'O' // Real Estate
       ]
     };
 
-    const relevantStocks = stockUniverses[preferredIndustry] || stockUniverses.Technology;
+    // Map user's preferredIndustry to stock universe keys
+    const industryMap: Record<string, string> = {
+      'Technology': 'technology',
+      'Healthcare': 'healthcare',
+      'Finance': 'finance',
+      'Energy': 'energy',
+      'Consumer Goods': 'consumer',
+      'Real Estate': 'real-estate',
+      'Mixed/Diversified': 'mixed'
+    };
+
+    const industryKey = industryMap[preferredIndustry] || 'mixed';
+    const relevantStocks = stockUniverses[industryKey] || stockUniverses.mixed;
+
+    // Industry descriptions for better AI context
+    const industryDescriptions: Record<string, string> = {
+      'technology': 'software, cloud computing, semiconductors, AI, cybersecurity, and digital platforms',
+      'healthcare': 'pharmaceuticals, biotech, medical devices, health insurance, and healthcare services',
+      'finance': 'banks, investment firms, payment processors, insurance companies, and financial services',
+      'energy': 'oil & gas exploration/production (XOM, CVX, COP), oilfield services (SLB, HAL), refiners (MPC, PSX), and utilities (NEE, DUK)',
+      'consumer': 'retail stores (WMT, COST, HD), consumer products (PG, KO, PEP), restaurants (MCD, SBUX), entertainment (DIS, NFLX), and telecom (VZ, T)',
+      'real-estate': 'REITs including industrial warehouses (PLD), data centers (DLR, EQIX), cell towers (AMT, CCI), apartments (AVB, EQR), retail properties (O, SPG), and storage facilities (PSA)',
+      'mixed': 'diversified portfolio across technology, healthcare, finance, energy, consumer goods, and real estate sectors'
+    };
+
+    // Provide specific examples for each sector
+    const sectorExamples: Record<string, string> = {
+      'technology': 'Examples: AAPL (consumer tech), MSFT (enterprise software), NVDA (AI chips), GOOGL (search/cloud)',
+      'healthcare': 'Examples: JNJ (pharma/devices), UNH (health insurance), LLY (biotech), ABBV (pharmaceuticals)',
+      'finance': 'Examples: JPM (banking), V/MA (payments), BLK (asset management), CB (insurance)',
+      'energy': 'Examples: XOM/CVX (oil majors), SLB (services), MPC/PSX (refiners), NEE (renewable utilities)',
+      'consumer': 'Examples: PG (household goods), WMT/COST (retail), KO/PEP (beverages), MCD (restaurants), DIS (entertainment)',
+      'real-estate': 'Examples: PLD (warehouses), AMT (cell towers), EQIX (data centers), O (retail), PSA (storage), AVB (apartments)',
+      'mixed': 'Select from multiple sectors for diversification'
+    };
 
     let watchlistContext = '';
     let exclusionNote = '';
@@ -76,48 +130,77 @@ export async function GET(req: NextRequest) {
     
     if (hasWatchlist) {
       watchlistContext = `\n\nUser's Current Watchlist:\n${watchlistSymbols.join(', ')}`;
-      exclusionNote = `\n4. CRITICAL: DO NOT recommend ANY stocks that are already in the user's watchlist (${watchlistSymbols.join(', ')}). Only recommend NEW stocks.`;
+      exclusionNote = `\n4. CRITICAL: DO NOT recommend ANY stocks already in the user's watchlist (${watchlistSymbols.join(', ')}). Only recommend NEW stocks.`;
       
-      const techStocksInWatchlist = watchlistSymbols.filter(s => 
-        stockUniverses.Technology?.includes(s)
-      ).length;
+      const sectorCounts = new Map<string, number>();
+      watchlistSymbols.forEach(symbol => {
+        for (const [sector, stocks] of Object.entries(stockUniverses)) {
+          if (stocks.includes(symbol)) {
+            sectorCounts.set(sector, (sectorCounts.get(sector) || 0) + 1);
+          }
+        }
+      });
       
-      if (techStocksInWatchlist >= 3 && preferredIndustry === 'Technology') {
-        diversificationNote = `\n5. The user already has ${techStocksInWatchlist} tech stocks. Consider recommending some from related sectors for diversification.`;
+      const dominantSectors = Array.from(sectorCounts.entries())
+        .filter(([_, count]) => count >= 3)
+        .map(([sector]) => sector);
+      
+      if (dominantSectors.length > 0) {
+        diversificationNote = `\n5. The user already has heavy exposure to: ${dominantSectors.join(', ')}. Consider diversification if recommending for 'mixed' portfolio.`;
       }
     }
 
-    const prompt = `You are a stock advisor AI providing personalized recommendations. Today's date is ${currentDate}.
+    const riskGuidance: Record<string, string> = {
+      conservative: 'Focus on stable, dividend-paying blue-chip companies with proven track records and low volatility',
+      moderate: 'Balance between growth potential and stability, including established companies with growth prospects',
+      aggressive: 'Prioritize high-growth potential stocks, including emerging leaders and innovative companies, accepting higher volatility'
+    };
+
+    const investmentGoalsGuidance: Record<string, string> = {
+      growth: 'Prioritize stocks with strong capital appreciation potential and revenue growth, even if dividends are minimal',
+      income: 'Focus on dividend-paying stocks with consistent cash flow and reliable income generation',
+      balanced: 'Mix of growth stocks and dividend payers, balancing capital appreciation with income generation',
+      preservation: 'Emphasize capital preservation with stable, low-volatility blue-chip stocks and defensive sectors'
+    };
+
+    const prompt = `You are an expert stock advisor AI. Today is ${currentDate}.
 
 User Profile:
 - Risk Tolerance: ${riskTolerance}
+- Investment Goals: ${investmentGoals}
 - Preferred Industry: ${preferredIndustry}${watchlistContext}
 
-Stock Universe (choose from these): ${relevantStocks.join(', ')}
+STOCK UNIVERSE - YOU MUST ONLY CHOOSE FROM THESE EXACT TICKERS:
+${relevantStocks.join(', ')}
 
-Requirements:
-1. Recommend exactly 5 stocks that match the user's ${riskTolerance} risk tolerance
-2. Focus on ${preferredIndustry} sector stocks
-3. Provide diverse picks - mix of large-cap, mid-cap, and growth stocks${exclusionNote}${diversificationNote}
-6. Each recommendation must include:
-   - symbol: Stock ticker
-   - reason: One compelling sentence explaining why this stock fits their profile (mention specific strengths, growth prospects, or stability factors)
-   - risk: Must match or be compatible with user's ${riskTolerance} risk tolerance
+${sectorExamples[industryKey]}
 
-${hasWatchlist ? `\nIMPORTANT CONTEXT:
-The user is already tracking: ${watchlistSymbols.join(', ')}
-Your recommendations should:
-- Add NEW stocks they don't have yet
-- Complement their existing portfolio
-- Fill gaps in their watchlist coverage` : '\nThe user has an empty watchlist. Recommend foundational stocks for their portfolio.'}
+What ${preferredIndustry} means: ${industryDescriptions[industryKey]}
 
-Return ONLY a valid JSON array with NO markdown, XML tags, explanations, or extra text. 
-Your entire output must be parseable by JSON.parse().
-Begin with '[' and end with ']'.
+Investment Strategy for ${investmentGoals}:
+${investmentGoalsGuidance[investmentGoals.toLowerCase()] || investmentGoalsGuidance.balanced}
 
-Example of correct output:
+Risk Approach for ${riskTolerance}:
+${riskGuidance[riskTolerance.toLowerCase()] || riskGuidance.moderate}
+
+YOUR TASK:
+Select exactly 5 stocks from the stock universe above that:
+1. Are ALL from ${preferredIndustry} sector (${industryDescriptions[industryKey]})
+2. Match ${investmentGoals} goals: ${investmentGoalsGuidance[investmentGoals.toLowerCase()] || investmentGoalsGuidance.balanced}
+3. Match ${riskTolerance} risk tolerance
+4. Are NOT in the user's watchlist${exclusionNote ? ': ' + watchlistSymbols.join(', ') : ''}${diversificationNote}
+
+STRICT RULES:
+✓ Use ONLY tickers listed in the stock universe above
+✓ All 5 stocks MUST be from ${preferredIndustry} sector
+✓ DO NOT recommend stocks from the watchlist
+✓ Match the exact risk level: ${riskTolerance}
+✗ DO NOT invent tickers not in the list
+✗ DO NOT mix sectors (stay in ${preferredIndustry})
+
+Output format (JSON only, no markdown, no explanations):
 [
-  { "symbol": "JPM", "reason": "Global banking leader with consistent earnings", "risk": "Medium" }
+  { "symbol": "TICKER", "reason": "Brief reason (max 15 words)", "risk": "${riskTolerance}" }
 ]`;
 
     const response = await fetch(
@@ -130,10 +213,19 @@ Example of correct output:
         },
         body: JSON.stringify({
           model: 'moonshotai/kimi-k2-instruct-0905',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.8,
-          max_tokens: 1500,
-          top_p: 0.9
+          messages: [
+            { 
+              role: 'system', 
+              content: `You are a stock recommendation AI. You MUST only recommend stocks from the provided list. Always return valid JSON arrays with no extra text.` 
+            },
+            { 
+              role: 'user', 
+              content: prompt 
+            }
+          ],
+          temperature: 0.4,
+          max_tokens: 1000,
+          top_p: 0.8
         })
       }
     );
@@ -160,17 +252,16 @@ Example of correct output:
     let parsedRecommendations: { symbol: string; reason: string; risk: string }[] = [];
 
     try {
-      // 🔥 CRITICAL: Strip <think>...</think> and other non-JSON wrappers
       let cleanedResponse = aiResponse.trim();
 
-      // Remove any <think>...</think> blocks (case-insensitive, multi-line)
+      // Remove <think>...</think> blocks
       cleanedResponse = cleanedResponse.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 
       // Remove markdown code fences
       cleanedResponse = cleanedResponse.replace(/```json\s*/gi, '');
       cleanedResponse = cleanedResponse.replace(/```\s*/g, '');
 
-      // Extract only the part between the first '[' and last ']'
+      // Extract JSON array
       const start = cleanedResponse.indexOf('[');
       const end = cleanedResponse.lastIndexOf(']');
       if (start === -1 || end === -1 || end <= start) {
@@ -184,11 +275,17 @@ Example of correct output:
         throw new Error("Parsed response is not an array");
       }
 
-      // Filter out invalid or duplicate recommendations
+      // Validate that recommended stocks are from the correct universe
+      const validSymbols = new Set(relevantStocks.map(s => s.toUpperCase()));
+      parsedRecommendations = parsedRecommendations.filter(rec => 
+        rec?.symbol && validSymbols.has(rec.symbol.toUpperCase())
+      );
+
+      // Filter out watchlist duplicates
       if (hasWatchlist) {
         const watchlistSet = new Set(watchlistSymbols.map(s => s.toUpperCase()));
         parsedRecommendations = parsedRecommendations.filter(rec => 
-          rec?.symbol && !watchlistSet.has(rec.symbol.toUpperCase())
+          !watchlistSet.has(rec.symbol.toUpperCase())
         );
       }
 
@@ -210,7 +307,7 @@ Example of correct output:
       recommendations: parsedRecommendations,
       generatedAt: currentDate,
       watchlistCount: watchlistSymbols?.length || 0,
-      basedOn: { riskTolerance, preferredIndustry, hasWatchlist },
+      basedOn: { riskTolerance, investmentGoals, preferredIndustry, hasWatchlist },
       refreshNote: hasWatchlist 
         ? "Recommendations update dynamically as you modify your watchlist" 
         : "Add stocks to your watchlist for more personalized recommendations"

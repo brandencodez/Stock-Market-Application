@@ -15,7 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Edit } from "lucide-react";
@@ -32,7 +32,6 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 
-// Define the extended user type
 interface ExtendedUser {
     id: string;
     name: string;
@@ -49,14 +48,11 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
     const [isEditMode, setIsEditMode] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     
-    // Track current user data in state
-    const [currentUser, setCurrentUser] = useState(user);
-    
     const [formData, setFormData] = useState({
-        country: currentUser.country || '',
-        investmentGoals: currentUser.investmentGoals || '',
-        riskTolerance: currentUser.riskTolerance || '',
-        preferredIndustry: currentUser.preferredIndustry || '',
+        country: user.country || '',
+        investmentGoals: user.investmentGoals || '',
+        riskTolerance: user.riskTolerance || '',
+        preferredIndustry: user.preferredIndustry || '',
     });
 
     const handleSignOut = async () => {
@@ -72,8 +68,6 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
             if (result.success) {
                 setIsEditMode(false);
                 setIsProfileOpen(false);
-                
-                // Force full page reload to get fresh data from server
                 window.location.reload();
             } else {
                 console.error('Failed to update profile:', result.error);
@@ -88,12 +82,11 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
     }
 
     const handleCancelEdit = () => {
-        // Reset form data to current user values
         setFormData({
-            country: currentUser.country || '',
-            investmentGoals: currentUser.investmentGoals || '',
-            riskTolerance: currentUser.riskTolerance || '',
-            preferredIndustry: currentUser.preferredIndustry || '',
+            country: user.country || '',
+            investmentGoals: user.investmentGoals || '',
+            riskTolerance: user.riskTolerance || '',
+            preferredIndustry: user.preferredIndustry || '',
         });
         setIsEditMode(false);
     }
@@ -105,12 +98,12 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
                     <Button variant="ghost" className="flex items-center gap-3 text-gray-4 hover:text-yellow-500">
                         <Avatar className="h-8 w-8">
                             <AvatarFallback className="bg-yellow-500 text-yellow-900 text-sm font-bold">
-                                {currentUser.name[0]}
+                                {user.name[0]}
                             </AvatarFallback>
                         </Avatar>
                         <div className="hidden md:flex flex-col items-start">
                             <span className='text-base font-medium text-gray-400'>
-                                {currentUser.name}
+                                {user.name}
                             </span>
                         </div>
                     </Button>
@@ -120,14 +113,14 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
                         <div className="flex relative items-center gap-3 py-2">
                             <Avatar className="h-10 w-10">
                                 <AvatarFallback className="bg-yellow-500 text-yellow-900 text-sm font-bold">
-                                    {currentUser.name[0]}
+                                    {user.name[0]}
                                 </AvatarFallback>
                             </Avatar>
                             <div className="flex flex-col">
                                 <span className='text-base font-medium text-gray-400'>
-                                    {currentUser.name}
+                                    {user.name}
                                 </span>
-                                <span className="text-sm text-gray-500">{currentUser.email}</span>
+                                <span className="text-sm text-gray-500">{user.email}</span>
                             </div>
                         </div>
                     </DropdownMenuLabel>
@@ -157,7 +150,6 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Profile Dialog */}
             <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
                 <DialogContent className="sm:max-w-[500px] bg-gray-800 text-gray-100 border-gray-700">
                     <DialogHeader>
@@ -170,11 +162,10 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
-                        {/* Basic Info */}
                         <div className="space-y-2">
                             <Label className="text-gray-300">Name</Label>
                             <Input 
-                                value={currentUser.name} 
+                                value={user.name} 
                                 disabled 
                                 className="bg-gray-700 border-gray-600 text-gray-400"
                             />
@@ -183,13 +174,12 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
                         <div className="space-y-2">
                             <Label className="text-gray-300">Email</Label>
                             <Input 
-                                value={currentUser.email} 
+                                value={user.email} 
                                 disabled 
                                 className="bg-gray-700 border-gray-600 text-gray-400"
                             />
                         </div>
 
-                        {/* Editable Fields */}
                         <div className="space-y-2">
                             <Label className="text-gray-300">Country</Label>
                             <Input 
@@ -282,7 +272,6 @@ const UserDropdown = ({ user }: { user: ExtendedUser }) => {
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex justify-end gap-3">
                         {isEditMode ? (
                             <>

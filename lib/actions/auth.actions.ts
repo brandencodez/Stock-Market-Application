@@ -16,20 +16,29 @@ export const signUpWithEmail = async ({
     try {
         const a = await auth();
         
+        console.log('Signing up with data:', { 
+            email, 
+            name: fullName, 
+            country, 
+            investmentGoals, 
+            riskTolerance, 
+            preferredIndustry 
+        });
+        
         const response = await a.api.signUpEmail({ 
             body: { 
                 email, 
                 password, 
                 name: fullName,
-                // Add custom fields during signup
                 country,
                 investmentGoals,
                 riskTolerance,
                 preferredIndustry
-            } as any // Type assertion needed for custom fields
+            } as any
         });
 
-        //  Send Inngest event after successful signup
+        console.log('Signup response:', JSON.stringify(response, null, 2));
+
         if(response?.user?.id) {
             await inngest.send({
                 name: 'app/user.created',
@@ -93,14 +102,12 @@ export const updateUserProfile = async ({
     try {
         const a = await auth();
         
-        // Get current session to verify authentication
         const session = await a.api.getSession({ headers: await headers() });
         
         if (!session?.user?.id) {
             return { success: false, error: 'Not authenticated' };
         }
 
-        // Update user profile with proper headers
         const response = await a.api.updateUser({
             headers: await headers(),
             body: {
@@ -115,5 +122,40 @@ export const updateUserProfile = async ({
     } catch (e: any) {
         console.log('Profile update failed', JSON.stringify(e, null, 2));
         return { success: false, error: e?.message || 'Failed to update profile' };
+    }
+}
+
+export async function getCurrentUser() {
+    try {
+        const a = await auth();
+        const session = await a.api.getSession({ 
+            headers: await headers() 
+        });
+
+        if (!session?.user) {
+            return null;
+        }
+
+        const user = session.user as any;
+
+        // Only log in development mode
+        if (process.env.NODE_ENV === 'development') {
+            console.log('getCurrentUser - User loaded');
+        }
+
+        const userData = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            country: user.country || '',
+            investmentGoals: user.investmentGoals || '',
+            riskTolerance: user.riskTolerance || '',
+            preferredIndustry: user.preferredIndustry || '',
+        };
+
+        return userData;
+    } catch (error) {
+        console.error('Failed to get current user:', error);
+        return null;
     }
 }

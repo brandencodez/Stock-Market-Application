@@ -1,18 +1,12 @@
 import Header from "@/components/Header";
-import {auth} from "@/lib/better-auth/auth";
-import {headers} from "next/headers";
-import {redirect} from "next/navigation";
+import { getCurrentUser } from "@/lib/actions/auth.actions";
+import { redirect } from "next/navigation";
 
 const Layout = async ({ children }: { children : React.ReactNode }) => {
-    const a = await auth();
-    const session = await a.api.getSession({ headers: await headers() });
+    const user = await getCurrentUser();
 
-    if(!session?.user) redirect('/sign-in');
-
-    const user = {
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
+    if (!user) {
+        redirect('/sign-in');
     }
 
     return (
@@ -25,4 +19,5 @@ const Layout = async ({ children }: { children : React.ReactNode }) => {
         </main>
     )
 }
+
 export default Layout

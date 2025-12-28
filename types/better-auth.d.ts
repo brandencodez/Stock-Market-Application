@@ -1,55 +1,26 @@
-import { betterAuth } from "better-auth";
-import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { connectToDatabase } from "@/database/mongoose";
-import { nextCookies } from "better-auth/next-js";
+import "better-auth";
 
-let authInstance: ReturnType<typeof betterAuth> | null = null;
-
-export async function auth() {
-    if (authInstance) return authInstance;
-
-    const mongoose = await connectToDatabase();
-    const db = mongoose.connection.db;
-    if (!db) throw new Error("MongoDB connection failed");
-
-    authInstance = betterAuth({
-        database: mongodbAdapter(db as any),
-        secret: process.env.BETTER_AUTH_SECRET!,
-        baseURL: process.env.BETTER_AUTH_URL!,
-        emailAndPassword: {
-            enabled: true,
-            disableSignUp: false,
-            requireEmailVerification: false, 
-            minPasswordLength: 8,
-            maxPasswordLength: 128,
-            autoSignIn: true,
-        },
-        plugins: [nextCookies()],
-        user: {
-            additionalFields: {
-                country: {
-                    type: "string",
-                    required: false,
-                },
-                investmentGoals: {
-                    type: "string",
-                    required: false,
-                },
-                riskTolerance: {
-                    type: "string",
-                    required: false,
-                },
-                preferredIndustry: {
-                    type: "string",
-                    required: false,
-                },
-            },
-        },
-        // Add session configuration to include custom fields
-        session: {
-            fetchUser: true,
-        },
-    });
-
-    return authInstance;
+declare module "better-auth" {
+  interface User {
+    country?: string;
+    investmentGoals?: string;
+    riskTolerance?: string;
+    preferredIndustry?: string;
+  }
+  
+  interface Session {
+    user: User & {
+      id: string;
+      email: string;
+      name: string;
+      emailVerified: boolean;
+      image?: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      country?: string;
+      investmentGoals?: string;
+      riskTolerance?: string;
+      preferredIndustry?: string;
+    };
+  }
 }
