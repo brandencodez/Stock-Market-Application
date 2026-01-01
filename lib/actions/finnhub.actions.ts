@@ -273,3 +273,50 @@ export async function getNews(symbol?: string) {
     return [];
   }
 }
+
+export interface NewsArticle {
+  category: string;
+  datetime: number;
+  headline: string;
+  id: number;
+  image: string;
+  related: string;
+  source: string;
+  summary: string;
+  url: string;
+}
+
+// Fetch news for a single company 
+export async function getCompanyNews(symbol: string): Promise<NewsArticle[]> {
+  try {
+    const news = await getNews(symbol);
+    return news.slice(0, 2); // Return only 2 most recent articles per stock
+  } catch (error) {
+    console.error(`Error fetching news for ${symbol}:`, error);
+    return [];
+  }
+}
+
+// Fetch news for all watchlist stocks
+export async function getWatchlistNews(symbols: string[]): Promise<Record<string, NewsArticle[]>> {
+  try {
+    // Use Promise.all to fetch news for all symbols concurrently
+    const newsPromises = symbols.map(async (symbol) => {
+      const news = await getCompanyNews(symbol);
+      return { symbol, news };
+    });
+    
+    const results = await Promise.all(newsPromises);
+    
+    // Convert array to object map for easier lookup
+    const newsMap: Record<string, NewsArticle[]> = {};
+    results.forEach(({ symbol, news }) => {
+      newsMap[symbol] = news;
+    });
+    
+    return newsMap;
+  } catch (error) {
+    console.error('Error fetching watchlist news:', error);
+    return {};
+  }
+}
