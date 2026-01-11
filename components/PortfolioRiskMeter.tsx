@@ -1,4 +1,3 @@
-// components/PortfolioRiskMeter.tsx
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
@@ -60,25 +59,15 @@ const DonutChart = ({ score, size = 120 }: { score: number; size?: number }) => 
   );
 };
 
-// Helper function to format time ago
 const formatTimeAgo = (timestamp: number) => {
   const now = Date.now();
   const diffInSeconds = Math.floor((now - timestamp) / 1000);
-  
   if (diffInSeconds < 60) return 'just now';
-  if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} min ago`;
-  }
-  if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} hr ago`;
-  }
-  const days = Math.floor(diffInSeconds / 86400);
-  return `${days} day ago`;
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hr ago`;
+  return `${Math.floor(diffInSeconds / 86400)} day ago`;
 };
 
-// Helper function to format exact timestamp
 const formatExactTime = (timestamp: number) => {
   return new Date(timestamp).toLocaleTimeString('en-US', {
     hour: 'numeric',
@@ -87,14 +76,16 @@ const formatExactTime = (timestamp: number) => {
   });
 };
 
-export default function PortfolioRiskMeter({ watchlist }: { watchlist: RuntimeWatchlistItem[]}) {
+export default function PortfolioRiskMeter({ watchlist }: { watchlist: RuntimeWatchlistItem[] }) {
   const [riskData, setRiskData] = useState({
     score: 0,
     level: 'LOW' as RiskLevel,
-    volatility: 0
+    volatility: 0,
+    suggestions: [] as string[]
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const lastFetchTime = useRef<number | null>(null);
 
   const fetchData = async () => {
@@ -104,7 +95,12 @@ export default function PortfolioRiskMeter({ watchlist }: { watchlist: RuntimeWa
       if (!response.ok) throw new Error('Failed to fetch risk data');
       
       const data = await response.json();
-      setRiskData(data);
+      setRiskData({
+        score: data.score ?? 0,
+        level: (data.level as RiskLevel) ?? 'LOW',
+        volatility: data.volatility ?? 0,
+        suggestions: Array.isArray(data.suggestions) ? data.suggestions : []
+      });
       lastFetchTime.current = Date.now();
       setError(null);
     } catch (err) {
@@ -117,18 +113,8 @@ export default function PortfolioRiskMeter({ watchlist }: { watchlist: RuntimeWa
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 300_000); // 2 minutes
+    const interval = setInterval(fetchData, 300_000); // 5 minutes
     return () => clearInterval(interval);
-  }, []);
-
-  // Real-time clock for dynamic updates
-  const [currentTime, setCurrentTime] = useState(Date.now());
-  
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 1000);
-    return () => clearInterval(timer);
   }, []);
 
   if (loading) {
@@ -141,6 +127,7 @@ export default function PortfolioRiskMeter({ watchlist }: { watchlist: RuntimeWa
         <div className="h-4 bg-muted rounded w-full"></div>
         <div className="h-4 bg-muted rounded w-2/3"></div>
         <div className="h-3 bg-muted rounded w-1/2"></div>
+        <div className="h-4 bg-muted rounded w-3/4 mx-auto mt-2"></div>
       </div>
     );
   }
@@ -158,35 +145,93 @@ export default function PortfolioRiskMeter({ watchlist }: { watchlist: RuntimeWa
   const exactTime = lastFetchTime.current ? formatExactTime(lastFetchTime.current) : null;
 
   return (
-    <div className="border rounded-lg p-6 shadow-sm bg-card max-w-xs">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="font-medium text-foreground">Portfolio Health Score</h3>
-        <span className={`px-2 py-1 text-xs font-medium rounded-full ${colorClass.replace('text-', 'bg-')} text-white`}>
-          {riskData.level} RISK
-        </span>
-      </div>
-      
-      <div className={`flex justify-center mb-4 ${colorClass}`}>
-        <DonutChart score={riskData.score} size={120} />
-      </div>
-      
-      <p className="text-sm text-muted-foreground mb-3 text-center">
-        {RISK_MESSAGES[riskData.level]}
-      </p>
-      
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">Volatility Index:</span>
-        <span className="font-medium">{(riskData.volatility * 100).toFixed(1)}%</span>
-      </div>
-      
-      {/* ✅ Both relative time AND exact timestamp */}
-      {timeAgo && exactTime && (
+    <>
+      {/* Main Risk Meter Card */}
+      <div className="border rounded-lg p-6 shadow-sm bg-card max-w-xs">
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="font-medium text-foreground">Portfolio Health Score</h3>
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${colorClass.replace('text-', 'bg-')} text-white`}>
+            {riskData.level} RISK
+          </span>
+        </div>
+
+        <div className={`flex justify-center mb-4 ${colorClass}`}>
+          <DonutChart score={riskData.score} size={120} />
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-3 text-center">
+          {RISK_MESSAGES[riskData.level]}
+        </p>
+
+        <div className="flex justify-between text-sm mb-4">
+          <span className="text-muted-foreground">Volatility Index:</span>
+          <span className="font-medium">{(riskData.volatility * 100).toFixed(1)}%</span>
+        </div>
+
+        {/* CLICKABLE QUICK SUGGESTIONS LINK */}
         <div className="mt-3 pt-3 border-t border-gray-200/20">
-          <p className="text-xs text-muted-foreground text-center">
-            Last updated: {timeAgo} ({exactTime})
-          </p>
+          <button
+            onClick={() => setShowSuggestions(true)}
+            className="text-sm text-blue-500 hover:underline w-full text-center font-medium"
+          >
+            💡 View Quick Suggestions
+          </button>
+        </div>
+
+        {/* Timestamp */}
+        {timeAgo && exactTime && (
+          <div className="mt-3 pt-3 border-t border-gray-200/20">
+            <p className="text-xs text-muted-foreground text-center">
+              Last updated: {timeAgo} ({exactTime})
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* MODAL POPUP FOR SUGGESTIONS */}
+      {showSuggestions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-11/12 max-w-md mx-auto shadow-2xl border border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg text-foreground">AI Quick Suggestions</h3>
+              <button
+                onClick={() => setShowSuggestions(false)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              {riskData.suggestions.length > 0 ? (
+                riskData.suggestions.map((sugg, i) => (
+                  <div
+                    key={i}
+                    className="p-3 bg-blue-50 dark:bg-gray-700/50 rounded-lg text-sm text-foreground"
+                  >
+                    {sugg}
+                  </div>
+                ))
+              ) : (
+                <div className="p-3 text-sm text-muted-foreground">
+                  No suggestions available at this time.
+                </div>
+              )}
+            </div>
+
+            {/* structured footer with disclaimer */}
+            <div className="text-xs text-center space-y-2 pt-4 border-t border-gray-200/20">
+              <p className="text-muted-foreground">
+                Generated on {new Date().toLocaleDateString()} based on your watchlist and market conditions.
+              </p>
+              <p className="text-yellow-600 dark:text-yellow-400 font-medium bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded inline-block">
+                ⚠️ Not financial advice. Investments carry risk. AI content is informational only — do your own research.
+              </p>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -487,3 +487,15 @@
 .scrollbar-hide-default::-webkit-scrollbar-thumb:hover {
   background-color: #9095A1;
 }
+
+/* Mobile only */
+@media (hover: none) and (pointer: coarse) {
+  .tv-touch-fix {
+    touch-action: pan-y !important; /* allow vertical scroll */
+    overscroll-behavior: contain;
+  }
+
+  .tv-touch-fix iframe {
+    touch-action: pan-y !important;
+  }
+}

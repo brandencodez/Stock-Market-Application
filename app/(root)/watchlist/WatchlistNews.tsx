@@ -52,8 +52,17 @@ export default function WatchlistNews({ newsData, watchlist }: WatchlistNewsProp
                    totalArticles <= 6 ? 'lg:grid-cols-3' :
                    'lg:grid-cols-4';
 
+  // Show a friendly message if no news is available
   if (allNews.length === 0) {
-    return null;
+    return (
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-white">What's New</h2>
+          <p className="text-sm text-gray-400">Powered by Finnhub</p>
+        </div>
+        <p className="text-gray-400 italic">No new information available at this time.</p>
+      </div>
+    );
   }
 
   return (
@@ -70,7 +79,13 @@ export default function WatchlistNews({ newsData, watchlist }: WatchlistNewsProp
             href={article.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group bg-[#1a1a1a] border border-gray-800 rounded-lg p-5 hover:border-gray-700 transition-colors"
+            className="group bg-[#1a1a1a] hover:bg-[#1f1f1f] border border-gray-800 rounded-lg p-5
+                       hover:border-gray-600
+                       hover:shadow-2xl
+                       hover:-translate-y-2
+                       hover:scale-[1.03]
+                       transition-all duration-300 ease-out
+                       will-change-transform"
           >
             <div className="mb-3">
               <span className="inline-block px-2 py-1 text-xs font-medium rounded"

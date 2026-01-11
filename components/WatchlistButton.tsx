@@ -34,7 +34,7 @@ const WatchlistButton = ({
       : await addToWatchlist(symbol, company);
 
     if (result.success) {
-      toast.success(added ? 'Removed from Watchlist' : 'Added to Watchlist', {
+      toast.success(added ? `Removed ${symbol} from Watchlist` : `Added ${symbol} to Watchlist`, {
         description: `${company} ${
           added ? 'removed from' : 'added to'
         } your watchlist`,
