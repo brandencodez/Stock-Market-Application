@@ -47,7 +47,7 @@ Stay informed, manage risk, and get actionable insights — all in one adaptive,
 ![Image](https://github.com/user-attachments/assets/4c6b5442-faf6-483e-8e6f-f41549d278e0)
 
 ## WhatsApp Notification
-![Image](https://github.com/user-attachments/assets/52bbe516-5665-4e17-a050-83dc10c9e6d0)
+![Image](https://github.com/user-attachments/assets/1b6a2989-b2f7-41fa-be98-af54c56b103c)
 
 
 ## <a name="tech-stack">⚙️ Tech Stack</a>
