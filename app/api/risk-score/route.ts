@@ -61,7 +61,7 @@ Rules:
       // Call Groq 
       const chatCompletion = await groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt.trim() }],
-        model: 'moonshotai/kimi-k2-instruct-0905',
+        model: 'qwen/qwen3-32b',
         temperature: 0.3,
         max_tokens: 250,
         top_p: 0.9
