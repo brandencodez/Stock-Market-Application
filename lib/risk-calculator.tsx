@@ -1,4 +1,3 @@
-
 export interface RuntimeWatchlistItem {
   symbol: string;
   company: string;
@@ -11,85 +10,47 @@ export interface RuntimeWatchlistItem {
     l: number;
   } | null;
 }
-const RISK_THRESHOLDS = {
-  LOW: 30,      
-  MEDIUM: 60,   
-  HIGH: 100     
+
+export type HealthLevel = 'EXCELLENT' | 'GOOD' | 'MODERATE' | 'WEAK';
+
+const HEALTH_THRESHOLDS = {
+  EXCELLENT: 85,
+  GOOD: 70,
+  MODERATE: 50,
 };
 
-export const calculatePortfolioRisk = (watchlist: RuntimeWatchlistItem[]) => {
-  if (watchlist.length === 0) {
-    return { score: 0, level: 'LOW', volatility: 0 };
-  }
+const sectorRiskWeights = {
+  Technology: 1.2,
+  Healthcare: 1.0,
+  Energy: 1.3,
+  Finance: 1.1,
+  Consumer: 0.9,
+  default: 1.0,
+} as const;
 
-  const volatilityScores = watchlist.map(item => {
-    const quote = item.currentData;
-
-    console.log(`🔍 ${item.symbol} quote:`, quote);
-
-    if (!quote || 
-      typeof quote.h !== 'number' || 
-      typeof quote.l !== 'number' || 
-      typeof quote.c !== 'number' ||
-      quote.h <= 0 || 
-      quote.l <= 0 || 
-      quote.c <= 0) {
-    console.log(`❌ Invalid quote data for ${item.symbol}:`, quote);
-    return 0;
-  }
-
-    const intradayRange = quote.h - quote.l;
-    const normalizedVol = intradayRange / Math.abs(quote.c || 1);
-    const sectorVolatility = getSectorVolatility(item.stock.sector);
-    
-     console.log(`📊 ${item.symbol}: range=${intradayRange.toFixed(2)}, vol=${normalizedVol.toFixed(4)}, sector=${item.stock.sector} (${sectorVolatility})`);
-    
-    return normalizedVol * sectorVolatility;
-  });
-
-  const avgVolatility = volatilityScores.reduce((a, b) => a + b, 0) / watchlist.length;
-  console.log(`📈 Avg Volatility: ${avgVolatility.toFixed(4)}`);
-  
-  const concentrationRisk = calculateConcentrationRisk(watchlist);
-  console.log(`🎯 Concentration Risk: ${concentrationRisk.toFixed(4)}`);
-  
-  const rawScore01 = (avgVolatility * 0.7) + (concentrationRisk * 0.3);
-  const clamped01 = Math.min(Math.max(rawScore01, 0), 1);
-  const score = Math.round(clamped01 * 100);
-
-  console.log(`💯 Final Score: ${score}`);
-
-  return {
-    score,
-    level: getRiskLevel(score), 
-    volatility: avgVolatility
-  };
+const sectorMap: Record<string, string> = {
+  Banking: 'Finance',
+  'Financial Services': 'Finance',
+  Banks: 'Finance',
+  Software: 'Technology',
+  Semiconductors: 'Technology',
+  'Oil & Gas E&P': 'Energy',
+  'Oil & Gas Integrated': 'Energy',
+  Pharmaceuticals: 'Healthcare',
+  Biotechnology: 'Healthcare',
+  Retail: 'Consumer',
 };
 
-const getSectorVolatility = (sector: string) => {
-const sectorCategory: Record<string, string> = {
-    'Banking': 'Finance',
-    'Financial Services': 'Finance',
-    'Banks': 'Finance',
-    'Software': 'Technology', 
-    'Semiconductors': 'Technology',
-    'Oil & Gas E&P': 'Energy',
-    'Oil & Gas Integrated': 'Energy',
-    'Pharmaceuticals': 'Healthcare',
-    'Biotechnology': 'Healthcare',
-    'Retail': 'Consumer'
-  };
-  const category = sectorCategory[sector] || 'default';
+const getHealthLevel = (score: number): HealthLevel => {
+  if (score >= HEALTH_THRESHOLDS.EXCELLENT) return 'EXCELLENT';
+  if (score >= HEALTH_THRESHOLDS.GOOD) return 'GOOD';
+  if (score >= HEALTH_THRESHOLDS.MODERATE) return 'MODERATE';
+  return 'WEAK';
+};
 
-  const sectorVols: Record<string, number> = {
-    'Technology': 1.3,
-    'Healthcare': 1.1,
-    'Energy': 1.5,
-    'Finance': 1.2,
-    'Consumer': 0.9,
-    'default': 1.0
-  };
-  return sectorVols[category] || sectorVols.default;
+const getSectorRiskWeight = (sector: string) => {
+  const category = sectorMap[sector] || 'default';
+  return sectorRiskWeights[category as keyof typeof sectorRiskWeights] ?? 1.0;
 };
 
 const calculateConcentrationRisk = (watchlist: RuntimeWatchlistItem[]) => {
@@ -103,15 +64,39 @@ const calculateConcentrationRisk = (watchlist: RuntimeWatchlistItem[]) => {
   }, {} as Record<string, number>);
 
   const total = watchlist.length;
-  const hhi = Object.values(sectorCounts).reduce((sum, count) => 
-    sum + Math.pow(count / total, 2), 0
-  );
+  const hhi = Object.values(sectorCounts).reduce((sum, count) => {
+    const p = count / total;
+    return sum + p * p;
+  }, 0);
 
   return Math.min(hhi * 2, 1);
 };
 
-const getRiskLevel = (score: number): 'LOW' | 'MEDIUM' | 'HIGH' => {
-  if (score < RISK_THRESHOLDS.LOW) return 'LOW';
-  if (score < RISK_THRESHOLDS.MEDIUM) return 'MEDIUM';
-  return 'HIGH';
+export const calculatePortfolioHealth = (watchlist: RuntimeWatchlistItem[]) => {
+  if (watchlist.length === 0) {
+    return { score: 0, level: 'WEAK' as HealthLevel, volatility: 0 };
+  }
+
+  const volScores = watchlist.map(item => {
+    const q = item.currentData;
+    if (!q || q.h <= 0 || q.l <= 0 || q.c <= 0) return 0;
+
+    const intradayVol = (q.h - q.l) / q.c;
+    const sectorWeight = getSectorRiskWeight(item.stock.sector);
+
+    return intradayVol * sectorWeight;
+  });
+
+  const avgVol = volScores.reduce((a, b) => a + b, 0) / watchlist.length;
+  const concentrationRisk = calculateConcentrationRisk(watchlist);
+
+  const risk01 = Math.min(Math.max(avgVol * 0.7 + concentrationRisk * 0.3, 0), 1);
+  const score = Math.round((1 - risk01) * 100);
+  const level = getHealthLevel(score);
+
+  return {
+    score,
+    level,
+    volatility: avgVol,
+  };
 };

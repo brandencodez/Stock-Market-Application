@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getWatchlistWithData } from '@/lib/actions/watchlist.actions';
-import { calculatePortfolioRisk } from '@/lib/risk-calculator';
+import { calculatePortfolioHealth } from '@/lib/risk-calculator';
 import Groq from 'groq-sdk';
 
 type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
@@ -178,7 +178,7 @@ export async function GET() {
     }));
 
     // Calculate base risk metrics
-    const riskScore = calculatePortfolioRisk(riskWatchlist);
+    const riskScore = calculatePortfolioHealth(riskWatchlist);
 
     // --- Generate AI Quick Suggestions ---
     let suggestions: string[] = [];
