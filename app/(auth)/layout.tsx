@@ -23,7 +23,7 @@ const Layout = async ({ children }: { children: React.ReactNode }) => {
           />
         </Link>
 
-        <div className="pb-6 lg:pb-8 flex-1">{children}</div>
+        <div className="pb-6 lg:pb-8 flex-1 flex flex-col justify-center">{children}</div>
       </section>
 
       <section className="auth-right-section">

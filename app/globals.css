@@ -161,16 +161,25 @@
     @apply flex justify-between items-center px-6 py-4 text-gray-500;
   }
   .auth-layout {
-    @apply flex flex-col justify-between lg:flex-row h-screen bg-gray-900 relative overflow-hidden;
+   @apply flex flex-col justify-between lg:flex-row min-h-screen bg-gray-900 relative;
   }
   .auth-logo {
     @apply pt-6 lg:pt-8 mb-8 lg:mb-12;
   }
   .auth-left-section {
-    @apply w-full lg:w-[45%] lg:h-screen px-6 lg:px-16 flex flex-col overflow-y-auto;
+     @apply w-full lg:w-[45%] lg:h-screen px-6 lg:px-16 flex flex-col overflow-y-auto;
   }
   .auth-right-section {
-  @apply w-full max-lg:border-t max-lg:border-gray-600 lg:w-[55%] lg:h-screen bg-gray-800 px-6 py-4 md:p-6 lg:py-12 lg:px-18 flex flex-col justify-start overflow-hidden;
+  @apply w-full max-lg:border-t max-lg:border-gray-600 lg:w-[55%] lg:h-screen 
+         bg-gray-800 px-6 py-4 md:p-6 lg:py-12 lg:px-18 
+         flex flex-col justify-start overflow-y-auto lg:overflow-hidden;
+  }
+
+  /* Add this utility if needed */
+@layer utilities {
+  .auth-dashboard-wrapper {
+    @apply w-full mt-4 lg:flex-1 lg:relative h-[280px] lg:h-auto relative max-h-[40vh] lg:max-h-none;
+  }
 }
   .auth-blockquote {
     @apply text-sm md:text-xl lg:text-2xl font-medium text-gray-400 mb-1 md:mb-6 lg:mb-8;
