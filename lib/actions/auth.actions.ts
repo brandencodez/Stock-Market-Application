@@ -29,6 +29,8 @@ const getErrorMessage = (error: unknown, fallback: string) => {
     return fallback;
 };
 
+
+// --- Validation Schemas ---
 const forgotPasswordSchema = z.object({
     email: z.string().trim().email("Please enter a valid email address"),
 });
@@ -46,6 +48,25 @@ const resetPasswordSchema = z.object({
     path: ["confirmPassword"],
 });
 
+const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z.string()
+        .min(8, "New password must be at least 8 characters")
+        .max(128, "New password is too long")
+        .regex(/[A-Z]/, "New password must include an uppercase letter")
+        .regex(/[a-z]/, "New password must include a lowercase letter")
+        .regex(/[0-9]/, "New password must include a number")
+        .regex(/[^A-Za-z0-9]/, "New password must include a special character"),
+    confirmPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords do not match",
+    path: ["confirmPassword"],
+}).refine((data) => data.currentPassword !== data.newPassword, {
+    message: "New password must be different from current password",
+    path: ["newPassword"],
+});
+
+// --- Auth Actions ---
 export const signUpWithEmail = async ({ 
     email, 
     password, 
@@ -82,7 +103,8 @@ export const signUpWithEmail = async ({
         });
 
         console.log('Signup response:', JSON.stringify(response, null, 2));
-
+ 
+        // Only send the event once we have confirmed the user was created
         if(response?.user?.id) {
             await inngest.send({
                 name: 'app/user.created',
@@ -104,6 +126,8 @@ export const signUpWithEmail = async ({
     }
 }
 
+
+/** Authenticates an existing user with email and password. */
 export const signInWithEmail = async ({ email, password }: SignInFormData) => {
     try {
         const a = await auth();
@@ -121,6 +145,7 @@ export const signInWithEmail = async ({ email, password }: SignInFormData) => {
     }
 };
 
+/** Invalidates the current session server-side. */
 export const signOut = async () => {
     try {
         const a = await auth();
@@ -132,6 +157,8 @@ export const signOut = async () => {
     }
 }
 
+
+/** Updates the authenticated user's investor profile fields. */
 export const updateUserProfile = async ({ 
     country, 
     investmentGoals, 
@@ -166,6 +193,68 @@ export const updateUserProfile = async ({
     } catch (e: unknown) {
         console.log('Profile update failed', JSON.stringify(e, null, 2));
         return { success: false, error: getErrorMessage(e, 'Failed to update profile') };
+    }
+}
+
+/**
+ * Changes password for the currently authenticated user.
+ * Requires current password verification and enforces strength constraints.
+ */
+export const changeCurrentUserPassword = async ({
+    currentPassword,
+    newPassword,
+    confirmPassword,
+}: {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+}) => {
+    try {
+        const parsed = changePasswordSchema.safeParse({
+            currentPassword,
+            newPassword,
+            confirmPassword,
+        });
+
+        if (!parsed.success) {
+            return {
+                success: false,
+                error: parsed.error.issues[0]?.message || "Invalid password update request",
+            };
+        }
+
+        const a = await auth();
+        const requestHeaders = await headers();
+        const session = await a.api.getSession({ headers: requestHeaders });
+
+        if (!session?.user?.email) {
+            return { success: false, error: "Not authenticated" };
+        }
+
+        // Verify current password before attempting to rotate it.
+        await a.api.signInEmail({
+            body: {
+                email: session.user.email,
+                password: parsed.data.currentPassword,
+            },
+        });
+
+        await a.api.changePassword({
+            headers: requestHeaders,
+            body: {
+                currentPassword: parsed.data.currentPassword,
+                newPassword: parsed.data.newPassword,
+                revokeOtherSessions: true,
+            },
+        });
+
+        return { success: true };
+    } catch (e: unknown) {
+        console.log("Password change failed", JSON.stringify(e, null, 2));
+        return {
+            success: false,
+            error: getErrorMessage(e, "Failed to change password"),
+        };
     }
 }
 
@@ -212,6 +301,8 @@ export async function getCurrentUser() {
     }
 }
 
+// --- Password Reset Flow ---
+// The flow is: requestPasswordReset → verifyPasswordResetOtp → resetPasswordWithToken
 export const requestPasswordReset = async ({ email }: { email: string }) => {
     const genericMessage = "If the email exists, an OTP has been sent.";
 
@@ -247,6 +338,7 @@ export const requestPasswordReset = async ({ email }: { email: string }) => {
         };
     } catch {
         // Return generic success to avoid account enumeration hints.
+        // the email exists or whether the mail provider failed
         return {
             success: true,
             message: genericMessage,
@@ -259,6 +351,11 @@ export const resendPasswordResetOtp = async ({ email }: { email: string }) => {
     return requestPasswordReset({ email });
 };
 
+/**
+ * Validates the OTP the user entered and, if correct, issues a short-lived
+ * reset grant stored in an HTTP-only cookie (10-minute TTL).
+ * The cookie is scoped to `/reset-password` to limit its exposure.
+ */
 export const verifyPasswordResetOtp = async ({ email, otp }: { email: string; otp: string }) => {
     const parsed = verifyOtpSchema.safeParse({ email, otp });
     if (!parsed.success) {
@@ -270,6 +367,7 @@ export const verifyPasswordResetOtp = async ({ email, otp }: { email: string; ot
         return { success: false, error: verificationResult.error };
     }
 
+    // Store the grant token in an HTTP-only cookie so the client never sees it
     const cookieStore = await cookies();
     cookieStore.set('password_reset_grant', verificationResult.grantToken, {
         httpOnly: true,
@@ -282,6 +380,11 @@ export const verifyPasswordResetOtp = async ({ email, otp }: { email: string; ot
     return { success: true };
 };
 
+/**
+ * Consumes the reset grant cookie and updates the user's password.
+ * The grant is single-use — `consumeResetGrant` deletes it after reading,
+ * so replaying the request with the same cookie will fail.
+ */
 export const resetPasswordWithToken = async ({
     newPassword,
     confirmPassword,
@@ -303,6 +406,7 @@ export const resetPasswordWithToken = async ({
 
         const grantResult = await consumeResetGrant(grantCookie);
         if (!grantResult.success) {
+             // Clear the invalid/expired cookie to force a fresh OTP request
             cookieStore.delete('password_reset_grant');
             return { success: false, error: grantResult.error };
         }
@@ -315,7 +419,7 @@ export const resetPasswordWithToken = async ({
                 newPassword: parsed.data.newPassword,
             },
         });
-
+         // Clean up the grant cookie now that the reset is complete
         cookieStore.delete('password_reset_grant');
 
         return { success: true };
