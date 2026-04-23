@@ -74,9 +74,20 @@ const SignUp = () => {
                     label="Password"
                     placeholder="Enter a strong password"
                     type="password"
+                    showPasswordToggle
                     register={register}
                     error={errors.password}
-                    validation={{ required: 'Password is required', minLength: 8 }}
+                    validation={{
+                        required: 'Password is required',
+                        minLength: {
+                            value: 8,
+                            message: 'Password must be at least 8 characters',
+                        },
+                        pattern: {
+                            value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/,
+                            message: 'Use atleast 1 upper, lower, number, and special character',
+                        },
+                    }}
                 />
 
                 <CountrySelectField

@@ -40,8 +40,26 @@ const verifyOtpSchema = z.object({
     otp: z.string().trim().regex(/^\d{4}$/, "OTP must be exactly 4 digits"),
 });
 
+const strongPasswordSchema = z.string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128, "Password is too long")
+    .regex(/[A-Z]/, "Password must include an uppercase letter")
+    .regex(/[a-z]/, "Password must include a lowercase letter")
+    .regex(/[0-9]/, "Password must include a number")
+    .regex(/[^A-Za-z0-9]/, "Password must include a special character");
+
+const signUpSchema = z.object({
+    fullName: z.string().trim().min(2, "Full name must be at least 2 characters"),
+    email: z.string().trim().email("Please enter a valid email address"),
+    password: strongPasswordSchema,
+    country: z.string().trim().min(1, "Country is required"),
+    investmentGoals: z.string().trim().min(1, "Investment goal is required"),
+    riskTolerance: z.string().trim().min(1, "Risk tolerance is required"),
+    preferredIndustry: z.string().trim().min(1, "Preferred industry is required"),
+});
+
 const resetPasswordSchema = z.object({
-    newPassword: z.string().min(8, "Password must be at least 8 characters").max(128, "Password is too long"),
+    newPassword: strongPasswordSchema,
     confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
     message: "Passwords do not match",
@@ -50,13 +68,7 @@ const resetPasswordSchema = z.object({
 
 const changePasswordSchema = z.object({
     currentPassword: z.string().min(1, "Current password is required"),
-    newPassword: z.string()
-        .min(8, "New password must be at least 8 characters")
-        .max(128, "New password is too long")
-        .regex(/[A-Z]/, "New password must include an uppercase letter")
-        .regex(/[a-z]/, "New password must include a lowercase letter")
-        .regex(/[0-9]/, "New password must include a number")
-        .regex(/[^A-Za-z0-9]/, "New password must include a special character"),
+    newPassword: strongPasswordSchema,
     confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
     message: "New passwords do not match",
@@ -77,6 +89,23 @@ export const signUpWithEmail = async ({
     preferredIndustry 
 }: SignUpFormData) => {
     try {
+        const parsed = signUpSchema.safeParse({
+            fullName,
+            email,
+            password,
+            country,
+            investmentGoals,
+            riskTolerance,
+            preferredIndustry,
+        });
+
+        if (!parsed.success) {
+            return {
+                success: false,
+                error: parsed.error.issues[0]?.message || "Invalid sign-up request",
+            };
+        }
+
         const a = await auth();
         
         console.log('Signing up with data:', { 
