@@ -7,6 +7,7 @@ import FooterLink from '@/components/forms/FooterLink';
 import { signInWithEmail } from '@/lib/actions/auth.actions';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const SignIn = () => {
     const router = useRouter();
@@ -55,6 +56,7 @@ const SignIn = () => {
                     label="Password"
                     placeholder="Enter your password"
                     type="password"
+                    showPasswordToggle
                     register={register}
                     error={errors.password}
                     validation={{
@@ -65,6 +67,12 @@ const SignIn = () => {
                         }
                     }}
                 />
+
+                <div className="text-right -mt-2">
+                    <Link href="/forgot-password" className="footer-link text-sm">
+                        Forgot password?
+                    </Link>
+                </div>
 
                 <Button disabled={isSubmitting} className="yellow-btn w-full mt-5">
                     {isSubmitting ? "Signing in..." : "Sign In"}

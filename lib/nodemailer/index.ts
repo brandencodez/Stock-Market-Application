@@ -1,5 +1,10 @@
 import nodemailer from 'nodemailer';
-import {WELCOME_EMAIL_TEMPLATE, NEWS_SUMMARY_EMAIL_TEMPLATE} from "@/lib/nodemailer/templates";
+import {
+    WELCOME_EMAIL_TEMPLATE,
+    NEWS_SUMMARY_EMAIL_TEMPLATE,
+    PASSWORD_RESET_EMAIL_TEMPLATE,
+    PASSWORD_CHANGED_EMAIL_TEMPLATE
+} from "@/lib/nodemailer/templates";
 
 export const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -41,4 +46,47 @@ export const sendNewsSummaryEmail = async (
     };
 
     await transporter.sendMail(mailOptions);
+};
+
+export const sendPasswordResetEmail = async ({
+    email,
+    name,
+    otpCode,
+    expirySeconds,
+}: {
+    email: string;
+    name: string;
+    otpCode: string;
+    expirySeconds: number;
+}): Promise<void> => {
+    const htmlTemplate = PASSWORD_RESET_EMAIL_TEMPLATE
+        .replace('{{name}}', name)
+        .replace('{{otpCode}}', otpCode)
+        .replace('{{expirySeconds}}', String(expirySeconds));
+
+    await transporter.sendMail({
+        from: `"StockPulse Security" <stockpulse@jsmastery.pro>`,
+        to: email,
+        subject: 'Your StockPulse password reset OTP',
+        text: `Your password reset OTP is ${otpCode}. It expires in ${expirySeconds} seconds.`,
+        html: htmlTemplate,
+    });
+};
+
+export const sendPasswordChangedEmail = async ({
+    email,
+    name,
+}: {
+    email: string;
+    name: string;
+}): Promise<void> => {
+    const htmlTemplate = PASSWORD_CHANGED_EMAIL_TEMPLATE.replace('{{name}}', name);
+
+    await transporter.sendMail({
+        from: `"StockPulse Security" <stockpulse@jsmastery.pro>`,
+        to: email,
+        subject: 'Your StockPulse password was changed',
+        text: 'Your password was changed successfully. If this was not you, reset your password immediately.',
+        html: htmlTemplate,
+    });
 };

@@ -153,7 +153,7 @@ export const WELCOME_EMAIL_TEMPLATE = `<!DOCTYPE html>
                                StockPulse HQ, 200 Market Street, San Francisco, CA 94105<br>
                                 <a href="#" style="color: #CCDADC !important; text-decoration: underline;">Unsubscribe</a> | 
                                 <a href="https://brandencodez-stock-market-app.vercel.app/" style="color: #CCDADC !important; text-decoration: underline;">Visit StockPulse</a><br>
-                                © 2025 StockPulse
+                                © 2026 StockPulse
                             </p>
                         </td>
                     </tr>
@@ -291,12 +291,100 @@ export const NEWS_SUMMARY_EMAIL_TEMPLATE = `<!DOCTYPE html>
                                     <a href="https://brandencodez-stock-market-app.vercel.app/" style="color: #CCDADC !important; text-decoration: underline;">Visit StockPulse</a>
                                 </p>
                                 <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #CCDADC !important;">
-                                    © 2025 StockPulse
+                                    © 2026 StockPulse
                                 </p>
                             </div>
                         </td>
                     </tr>
                     
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+
+export const PASSWORD_RESET_EMAIL_TEMPLATE = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset your StockPulse password</title>
+</head>
+<body style="margin:0;padding:0;background:#050505;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#050505;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:600px;background:#141414;border:1px solid #30333A;border-radius:12px;">
+                    <tr>
+                        <td align="left" style="padding:28px 28px 10px 28px;">
+                            <img src="https://ik.imagekit.io/ipayg8krj/logo.png" alt="StockPulse Logo" width="150" style="max-width:100%;height:auto;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:28px 28px 8px 28px;color:#FDD458;font-size:24px;font-weight:700;line-height:1.2;">
+                            Email Verification
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 28px 20px 28px;color:#CCDADC;font-size:15px;line-height:1.6;">
+                            Hi {{name}}, 
+                            We received a password reset request for your StockPulse account.
+                            Enter this OTP in the app. The code expires in {{expirySeconds}} seconds.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding:0 28px 12px 28px;">
+                            <div style="display:inline-block;letter-spacing:10px;background:#212328;color:#ffffff;font-size:32px;font-weight:700;padding:14px 20px;border-radius:10px;">
+                                {{otpCode}}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 28px 24px 28px;color:#9095A1;font-size:13px;line-height:1.6;word-break:break-all;">
+                            For your security: do not share this code with anyone, including support.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 28px 28px 28px;color:#9095A1;font-size:13px;line-height:1.6;">
+                            If you did not request this change, you can safely ignore this email.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
+
+export const PASSWORD_CHANGED_EMAIL_TEMPLATE = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your StockPulse password was changed</title>
+</head>
+<body style="margin:0;padding:0;background:#050505;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#050505;">
+        <tr>
+            <td align="center" style="padding:32px 16px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:600px;background:#141414;border:1px solid #30333A;border-radius:12px;">
+                    <tr>
+                        <td align="left" style="padding:28px 28px 10px 28px;">
+                            <img src="https://ik.imagekit.io/ipayg8krj/logo.png" alt="StockPulse Logo" width="150" style="max-width:100%;height:auto;">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:28px 28px 8px 28px;color:#FDD458;font-size:22px;font-weight:700;line-height:1.2;">
+                            Password updated
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:0 28px 28px 28px;color:#CCDADC;font-size:15px;line-height:1.6;">
+                            Hi {{name}}, your StockPulse password was changed successfully.
+                            If this was not you, please reset your password immediately and contact support.
+                        </td>
+                    </tr>
                 </table>
             </td>
         </tr>
@@ -500,7 +588,7 @@ export const STOCK_ALERT_UPPER_EMAIL_TEMPLATE = `<!DOCTYPE html>
                                     <a href="https://brandencodez-stock-market-app.vercel.app/" style="color: #CCDADC !important; text-decoration: underline;">Visit StockPulse</a>
                                 </p>
                                 <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #CCDADC !important;">
-                                    © 2025 StockPulse
+                                    © 2026 StockPulse
                                 </p>
                             </div>
                         </td>
@@ -709,7 +797,7 @@ export const STOCK_ALERT_LOWER_EMAIL_TEMPLATE = `<!DOCTYPE html>
                                     <a href="https://brandencodez-stock-market-app.vercel.app/" style="color: #CCDADC !important; text-decoration: underline;">Visit StockPulse</a>
                                 </p>
                                 <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #CCDADC !important;">
-                                    © 2025 StockPulse
+                                    © 2026 StockPulse
                                 </p>
                             </div>
                         </td>
@@ -929,7 +1017,7 @@ export const VOLUME_ALERT_EMAIL_TEMPLATE = `<!DOCTYPE html>
                                     <a href="https://brandencodez-stock-market-app.vercel.app/" style="color: #CCDADC !important; text-decoration: underline;">Visit StockPulse</a>
                                 </p>
                                 <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #CCDADC !important;">
-                                    © 2025 StockPulse
+                                    © 2026 StockPulse
                                 </p>
                             </div>
                         </td>
@@ -1096,7 +1184,7 @@ export const INACTIVE_USER_REMINDER_EMAIL_TEMPLATE = `<!DOCTYPE html>
                                     <a href="{{dashboardUrl}}" style="color: #CCDADC !important; text-decoration: underline;">Visit StockPulse</a>
                                 </p>
                                 <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #CCDADC !important;">
-                                    © 2025 StockPulse
+                                    © 2026 StockPulse
                                 </p>
                             </div>
                         </td>

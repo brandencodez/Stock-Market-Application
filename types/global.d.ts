@@ -27,6 +27,7 @@ declare global {
         label: string;
         placeholder: string;
         type?: string;
+        showPasswordToggle?: boolean;
         register: UseFormRegister;
         error?: FieldError;
         validation?: RegisterOptions;
